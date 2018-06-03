@@ -7,15 +7,21 @@
 //
 
 import UIKit
+import CoreLocation
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, CLLocationManagerDelegate {
 
     var window: UIWindow?
-
+    var locationManager = CLLocationManager()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        
+        locationAuthStatus()
         return true
     }
 
@@ -42,5 +48,51 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 
+}
+
+// Location
+
+extension AppDelegate {
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        locationManager.stopUpdatingLocation()
+        
+        // To stop multiple calls
+        locationManager.delegate = nil
+        let currentLocation = locations.last
+        
+        let geoCoder = CLGeocoder()
+        geoCoder.reverseGeocodeLocation(currentLocation!, completionHandler: {(placemarks, error) -> Void in
+            if error != nil {
+                print(error.debugDescription)
+            } else {
+//            var placeMark: CLPlacemark!
+                if let  placeMark = placemarks?[0] {
+                    if let city = placeMark.addressDictionary!["City"] as? NSString {
+                        currentCity = city as String
+                    }
+                }
+            }
+        })
+        
+        currentCoord = currentLocation!.coordinate
+    }
+    
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("error")
+    }
+    
+    func locationAuthStatus() {
+        if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
+            locationManager.startUpdatingLocation()
+        } else if CLLocationManager.authorizationStatus() == .notDetermined {
+            locationManager.requestWhenInUseAuthorization()
+        } else if CLLocationManager.authorizationStatus() == .restricted {
+            print("not allow")
+        }
+        
+    }
+   
 }
 
